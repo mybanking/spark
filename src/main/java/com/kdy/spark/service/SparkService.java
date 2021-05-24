@@ -1,7 +1,7 @@
 package com.kdy.spark.service;
 
-import com.kdy.spark.examples.JavaTC;
-import com.kdy.spark.examples.ProjectFn;
+import com.kdy.spark.entity.JavaTC;
+import com.kdy.spark.entity.ProjectFn;
 import com.kdy.spark.threads.CustomStreamingReceiver;
 import com.kdy.spark.util.MyComparator;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,6 @@ import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.regex.Pattern;
-
 
 
 /**
@@ -52,7 +50,11 @@ public class SparkService implements Serializable {
     public Map<String, Object> calculateTopTen(String path,int k) {
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
+
 
 
         Map<String, Object> result = new HashMap<>();
@@ -146,7 +148,9 @@ public class SparkService implements Serializable {
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
 
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
 
         Map<String, Object> result = new HashMap<>();
 
@@ -215,7 +219,9 @@ public class SparkService implements Serializable {
     public Map<String, Object> sparkExerciseDemo() {
 
        JavaSparkContext javaSparkContext = new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
 
 
 
@@ -302,7 +308,9 @@ public class SparkService implements Serializable {
     public Map<String, Object> sparkStreaming() throws InterruptedException {
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
 
         Map<String, Object> result = new HashMap<>();
 
@@ -330,7 +338,9 @@ public class SparkService implements Serializable {
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
 
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
 
         Map<String, Object> result = new HashMap<>();
 
@@ -361,7 +371,11 @@ public class SparkService implements Serializable {
     public Map<String ,Object> calTC(int slices){
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
+
         Map<String, Object> result = new HashMap<>();
 
         JavaTC javaTC=new JavaTC();

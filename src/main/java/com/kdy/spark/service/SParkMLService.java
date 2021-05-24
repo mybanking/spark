@@ -49,7 +49,9 @@ public class SParkMLService  implements Serializable {
     public Map<String, Object> kMeans(int k){
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
         SparkSession sparkSession = SparkSession
                 .builder().sparkContext(javaSparkContext.sc())
                 .appName("JavaKMeansExample")
@@ -96,7 +98,9 @@ public class SParkMLService  implements Serializable {
     public Map<String, Object> descisionTree(int maxCategories){
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
         SparkSession sparkSession = SparkSession
                 .builder().sparkContext(javaSparkContext.sc())
                 .appName("JavaKMeansExample")
@@ -176,7 +180,9 @@ public class SParkMLService  implements Serializable {
     public Map<String, Object> linearRegression(){
 
         JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-        javaSparkContext.addJar(jars);
+        if(jars!=null){
+            javaSparkContext.addJar(jars);
+        }
         SparkSession sparkSession = SparkSession
                 .builder().sparkContext(javaSparkContext.sc())
                 .appName("JavaKMeansExample")

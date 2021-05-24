@@ -37,5 +37,5 @@ spark:
     storage:
         # java.lang.IllegalArgumentException: requirement failed: spark.executor.heartbeatInterval should be less than or equal to spark.storage.blockManagerSlaveTimeoutMs
         blockManagerSlaveTimeoutMs: 1000000
-    jars: /root/study/spark-demo/spark.jar
+    jars: null
 #    jars: /usr/local/spark-3.0.0-bin-hadoop3.2/sbin/sb-spark-0.0.1-SNAPSHOT.jar #Spark SerializedLambda错误解决方案

@@ -1,4 +1,4 @@
-package com.kdy.spark.examples;
+package com.kdy.spark.entity;
 
 import lombok.Data;
 import org.apache.spark.api.java.function.PairFunction;
