@@ -36,10 +36,14 @@ public final class JavaWordCount {
 
   public static void main(String[] args) throws Exception {
 
-    SparkConf sparkConf = new SparkConf()
-            .setAppName("javaSparkPi")
-            .setMaster("local")
-            .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
+    SparkConf sparkConf = new SparkConf().setAppName("wordCount");
+
+//    if(args.length==0){
+//      sparkConf.setMaster("local")
+//              .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
+//    }
+
+
 
     JavaSparkContext jsc=new JavaSparkContext(sparkConf);
 
