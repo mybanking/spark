@@ -34,9 +34,9 @@ public class CustomStreamingReceiver extends Receiver<String> {
         while(!isStopped()) {
             //随机产生0-100 数值
             int value = RandomUtils.nextInt(100);
-            if(value <20) {
+            if(value <50) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 }catch (Exception e) {
                     log.error("sleep exception",e);
                     restart("sleep exception", e);

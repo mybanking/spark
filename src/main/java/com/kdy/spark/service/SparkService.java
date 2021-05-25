@@ -314,7 +314,7 @@ public class SparkService implements Serializable {
 
         Map<String, Object> result = new HashMap<>();
 
-        JavaStreamingContext jsc = new JavaStreamingContext(javaSparkContext, Durations.seconds(10));//批间隔时间
+        JavaStreamingContext jsc = new JavaStreamingContext(javaSparkContext, Durations.seconds(1));//批间隔时间
 
         JavaReceiverInputDStream<String> lines = jsc.receiverStream(new CustomStreamingReceiver(StorageLevel.MEMORY_AND_DISK_2()));
 
