@@ -2,6 +2,8 @@ package com.kdy.spark.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
@@ -13,17 +15,28 @@ import org.apache.spark.ml.clustering.BisectingKMeansModel;
 import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.*;
-import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
+import org.apache.spark.mllib.classification.LogisticRegressionModel;
+import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
+import org.apache.spark.mllib.clustering.KMeans;
+import org.apache.spark.mllib.clustering.KMeansModel;
+import org.apache.spark.mllib.evaluation.MulticlassMetrics;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.tree.DecisionTree;
+import org.apache.spark.mllib.tree.model.DecisionTreeModel;
+import org.apache.spark.mllib.util.MLUtils;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import scala.Tuple2;
+
 import java.io.Serializable;
 
 import java.util.HashMap;
@@ -52,42 +65,43 @@ public class SParkMLService  implements Serializable {
         if(jars!=null){
             javaSparkContext.addJar(jars);
         }
-        SparkSession sparkSession = SparkSession
-                .builder().sparkContext(javaSparkContext.sc())
-                .appName("JavaKMeansExample")
-                .getOrCreate();
+
 
         Map<String, Object> result = new HashMap<>();
         // $example on$
-        // Loads data.
-        Dataset<Row> dataset = sparkSession.read().format("libsvm").load("src/main/resources/data/mllib/sample_kmeans_data.txt");
+        // Load and parse data
+        String path = "src/main/java/com/kdy/spark/ml/data/mllib/kmeans_data.txt";
 
-        // Trains a bisecting k-means model.
-        BisectingKMeans bkm = new BisectingKMeans().setK(k).setSeed(1);
-        BisectingKMeansModel model = bkm.fit(dataset);
 
-        // Make predictions
-        Dataset<Row> predictions = model.transform(dataset);
+        JavaRDD<String> data = javaSparkContext.textFile(path);
 
-        // Evaluate clustering by computing Silhouette score
-        ClusteringEvaluator evaluator = new ClusteringEvaluator();
+        JavaRDD<org.apache.spark.mllib.linalg.Vector> parsedData = data.map(s -> {
+            String[] sarray = s.split(" ");
+            double[] values = new double[sarray.length];
+            for (int i = 0; i < sarray.length; i++) {
+                values[i] = Double.parseDouble(sarray[i]);
+            }
+            return org.apache.spark.mllib.linalg.Vectors.dense(values);
+        });
+        parsedData.cache();
 
-        double silhouette = evaluator.evaluate(predictions);
-        System.out.println("Silhouette with squared euclidean distance = " + silhouette);
-        result.put("Silhouette with squared euclidean distance = " ,silhouette);
+        // Cluster the data into two classes using KMeans
+        int numClusters = 2;
+        int numIterations = 20;
+        KMeansModel clusters = KMeans.train(parsedData.rdd(), numClusters, numIterations);
 
-        // Shows the result.
-        System.out.println("Cluster Centers: ");
-        String s="";
-        Vector[] centers = model.clusterCenters();
-        for (Vector center : centers) {
-            System.out.println(center);
-            s=s+center.toString();
-
+        System.out.println("Cluster centers:");
+        for (Vector center: clusters.clusterCenters()) {
+            System.out.println(" " + center);
         }
-        result.put("Cluster Centers: ",s);
+        double cost = clusters.computeCost(parsedData.rdd());
+        System.out.println("Cost: " + cost);
 
-        sparkSession.stop();
+        // Evaluate clustering by computing Within Set Sum of Squared Errors
+        double WSSSE = clusters.computeCost(parsedData.rdd());
+        System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
+
+        javaSparkContext.stop();
 
 
 
@@ -101,78 +115,41 @@ public class SParkMLService  implements Serializable {
         if(jars!=null){
             javaSparkContext.addJar(jars);
         }
-        SparkSession sparkSession = SparkSession
-                .builder().sparkContext(javaSparkContext.sc())
-                .appName("JavaKMeansExample")
-                .getOrCreate();
-
 
         Map<String, Object> result = new HashMap<>();
 
-        // $example on$
-        // Load the data stored in LIBSVM format as a DataFrame.
-        Dataset<Row> data = sparkSession
-                .read()
-                .format("libsvm")
-                .load("src/main/java/com/kdy/spark/ml/data/mllib/sample_libsvm_data.txt");
+        // Load and parse the data file.
+        String datapath = "src/main/java/com/kdy/spark/ml/data/mllib/sample_libsvm_data.txt";
+        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint> data = MLUtils.loadLibSVMFile(javaSparkContext.sc(), datapath).toJavaRDD();
+        // Split the data into training and test sets (30% held out for testing)
+        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint>[] splits = data.randomSplit(new double[]{0.7, 0.3});
+        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint> trainingData = splits[0];
+        JavaRDD<LabeledPoint> testData = splits[1];
 
-        // Index labels, adding metadata to the label column.
-        // Fit on whole dataset to include all labels in index.
-        StringIndexerModel labelIndexer = new StringIndexer()
-                .setInputCol("label")
-                .setOutputCol("indexedLabel")
-                .fit(data);
+        // Set parameters.
+        //  Empty categoricalFeaturesInfo indicates all features are continuous.
+        int numClasses = 2;
+        Map<Integer, Integer> categoricalFeaturesInfo = new HashMap<>();
+        String impurity = "gini";
+        int maxDepth = 5;
+        int maxBins = 32;
 
-        // Automatically identify categorical features, and index them.
-        VectorIndexerModel featureIndexer = new VectorIndexer()
-                .setInputCol("features")
-                .setOutputCol("indexedFeatures")
-                .setMaxCategories(4) // features with > 4 distinct values are treated as continuous.
-                .fit(data);
+        // Train a DecisionTree model for classification.
+        DecisionTreeModel model = DecisionTree.trainClassifier(trainingData, numClasses,
+                categoricalFeaturesInfo, impurity, maxDepth, maxBins);
 
-        // Split the data into training and test sets (30% held out for testing).
-        Dataset<Row>[] splits = data.randomSplit(new double[]{0.7, 0.3});
-        Dataset<Row> trainingData = splits[0];
-        Dataset<Row> testData = splits[1];
+        // Evaluate model on test instances and compute test error
+        JavaPairRDD<Double, Double> predictionAndLabel =
+                testData.mapToPair(p -> new Tuple2<>(model.predict(p.features()), p.label()));
+        double testErr =
+                predictionAndLabel.filter(pl -> !pl._1().equals(pl._2())).count() / (double) testData.count();
 
-        // Train a DecisionTree model.
-        DecisionTreeClassifier dt = new DecisionTreeClassifier()
-                .setLabelCol("indexedLabel")
-                .setFeaturesCol("indexedFeatures");
+        System.out.println("Test Error: " + testErr);
+        System.out.println("Learned classification tree model:\n" + model.toDebugString());
 
-        // Convert indexed labels back to original labels.
-        IndexToString labelConverter = new IndexToString()
-                .setInputCol("prediction")
-                .setOutputCol("predictedLabel")
-                .setLabels(labelIndexer.labelsArray()[0]);
+        // $example off$
 
-        // Chain indexers and tree in a Pipeline.
-        Pipeline pipeline = new Pipeline()
-                .setStages(new PipelineStage[]{labelIndexer, featureIndexer, dt, labelConverter});
-
-        // Train model. This also runs the indexers.
-        PipelineModel model = pipeline.fit(trainingData);
-
-        // Make predictions.
-        Dataset<Row> predictions = model.transform(testData);
-
-        // Select example rows to display.
-        predictions.select("predictedLabel", "label", "features").show(5);
-
-        // Select (prediction, true label) and compute test error.
-        MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
-                .setLabelCol("indexedLabel")
-                .setPredictionCol("prediction")
-                .setMetricName("accuracy");
-        double accuracy = evaluator.evaluate(predictions);
-        System.out.println("Test Error = " + (1.0 - accuracy));
-        result.put("Test Error = " ,(1.0 - accuracy));
-
-        DecisionTreeClassificationModel treeModel =
-                (DecisionTreeClassificationModel) (model.stages()[2]);
-        System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
-        result.put("Learned classification tree model: " ,treeModel.toDebugString());
-        sparkSession.stop();
+        javaSparkContext.stop();
         return result;
     }
 
@@ -191,36 +168,30 @@ public class SParkMLService  implements Serializable {
         Map<String, Object> result = new HashMap<>();
 
         // $example on$
-        // Load training data.
-        Dataset<Row> training = sparkSession.read().format("libsvm")
-                .load("src/main/java/com/kdy/spark/ml/data/mllib/sample_linear_regression_data.txt");
+        String path = "src/main/java/com/kdy/spark/ml/data/mllib/sample_libsvm_data.txt";
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(javaSparkContext.sc(), path).toJavaRDD();
 
-        LinearRegression lr = new LinearRegression()
-                .setMaxIter(10)
-                .setRegParam(0.3)
-                .setElasticNetParam(0.8);
+        // Split initial RDD into two... [60% training data, 40% testing data].
+        JavaRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
+        JavaRDD<LabeledPoint> training = splits[0].cache();
+        JavaRDD<LabeledPoint> test = splits[1];
 
-        // Fit the model.
-        LinearRegressionModel lrModel = lr.fit(training);
+        // Run training algorithm to build the model.
+        LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
+                .setNumClasses(10)
+                .run(training.rdd());
 
-        // Print the coefficients and intercept for linear regression.
-        System.out.println("Coefficients: "
-                + lrModel.coefficients() + " Intercept: " + lrModel.intercept());
-        result.put("Coefficients: ",lrModel.coefficients().toString());
-        result.put("Intercept: " ,lrModel.intercept());
-        // Summarize the model over the training set and print out some metrics.
-        LinearRegressionTrainingSummary trainingSummary = lrModel.summary();
-        System.out.println("numIterations: " + trainingSummary.totalIterations());
-        result.put("numIterations: " ,trainingSummary.totalIterations());
-        System.out.println("objectiveHistory: " + Vectors.dense(trainingSummary.objectiveHistory()));
-        result.put("objectiveHistory: " ,Vectors.dense(trainingSummary.objectiveHistory()).toString());
-        trainingSummary.residuals().show();
-        System.out.println("RMSE: " + trainingSummary.rootMeanSquaredError());
-        result.put("RMSE: " , trainingSummary.rootMeanSquaredError());
-        System.out.println("r2: " + trainingSummary.r2());
-        result.put("r2: " , trainingSummary.r2());
+        // Compute raw scores on the test set.
+        JavaPairRDD<Object, Object> predictionAndLabels = test.mapToPair(p ->
+                new Tuple2<>(model.predict(p.features()), p.label()));
+
+        // Get evaluation metrics.
+        MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels.rdd());
+        double accuracy = metrics.accuracy();
+        System.out.println("Accuracy = " + accuracy);
         // $example off$
-        sparkSession.stop();
+
+        javaSparkContext.stop();
 
         return result;
     }

@@ -19,15 +19,14 @@ package com.kdy.spark.ml;
 
 // $example on$
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.clustering.KMeansModel;
-import org.apache.spark.ml.clustering.KMeans;
-import org.apache.spark.ml.evaluation.ClusteringEvaluator;
-import org.apache.spark.ml.linalg.Vector;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-// $example off$
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.mllib.clustering.KMeans;
+import org.apache.spark.mllib.clustering.KMeansModel;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.Vectors;
+
+
 
 
 /**
@@ -46,39 +45,45 @@ public class JavaKMeansExample {
             .setMaster("local")
             .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
     // Create a SparkSession.
-    JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
-
-    SparkSession spark = SparkSession
-      .builder().sparkContext(javaSparkContext.sc())
-      .appName("JavaKMeansExample")
-      .getOrCreate();
+    JavaSparkContext jsc=new JavaSparkContext(sparkConf);
 
     // $example on$
-    // Loads data.
-    Dataset<Row> dataset = spark.read().format("libsvm").load("src/main/java/com/kdy/spark/ml/data/mllib/sample_kmeans_data.txt");
+    // Load and parse data
+    String path = "src/main/java/com/kdy/spark/ml/data/mllib/kmeans_data.txt";
 
-    // Trains a k-means model.
-    KMeans kmeans = new KMeans().setK(2).setSeed(1L);
-    KMeansModel model = kmeans.fit(dataset);
 
-    // Make predictions
-    Dataset<Row> predictions = model.transform(dataset);
+    JavaRDD<String> data = jsc.textFile(path);
 
-    // Evaluate clustering by computing Silhouette score
-    ClusteringEvaluator evaluator = new ClusteringEvaluator();
+    JavaRDD<Vector> parsedData = data.map(s -> {
+      String[] sarray = s.split(" ");
+      double[] values = new double[sarray.length];
+      for (int i = 0; i < sarray.length; i++) {
+        values[i] = Double.parseDouble(sarray[i]);
+      }
+      return Vectors.dense(values);
+    });
+    parsedData.cache();
 
-    double silhouette = evaluator.evaluate(predictions);
-    System.out.println("Silhouette with squared euclidean distance = " + silhouette);
+    // Cluster the data into two classes using KMeans
+    int numClusters = 2;
+    int numIterations = 20;
+    KMeansModel clusters = KMeans.train(parsedData.rdd(), numClusters, numIterations);
 
-    // Shows the result.
-    Vector[] centers = model.clusterCenters();
-    System.out.println("Cluster Centers: ");
-    for (Vector center: centers) {
-      System.out.println(center);
+    System.out.println("Cluster centers:");
+    for (Vector center: clusters.clusterCenters()) {
+      System.out.println(" " + center);
     }
+    double cost = clusters.computeCost(parsedData.rdd());
+    System.out.println("Cost: " + cost);
+
+    // Evaluate clustering by computing Within Set Sum of Squared Errors
+    double WSSSE = clusters.computeCost(parsedData.rdd());
+    System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
+
+
     // $example off$
 
-    spark.stop();
+    jsc.stop();
   }
 
 

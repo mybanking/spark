@@ -20,13 +20,15 @@ package com.kdy.spark.ml;
 // $example on$
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.regression.LinearRegression;
-import org.apache.spark.ml.regression.LinearRegressionModel;
-import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
-import org.apache.spark.ml.linalg.Vectors;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
+import scala.Tuple2;
+
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.mllib.classification.LogisticRegressionModel;
+import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
+import org.apache.spark.mllib.evaluation.MulticlassMetrics;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.util.MLUtils;
 // $example off$
 
 public class JavaLinearRegressionWithElasticNetExample {
@@ -38,37 +40,30 @@ public class JavaLinearRegressionWithElasticNetExample {
     // Create a SparkSession.
     JavaSparkContext javaSparkContext=new JavaSparkContext(sparkConf);
 
-    SparkSession spark = SparkSession
-      .builder()
-      .appName("JavaLinearRegressionWithElasticNetExample")
-      .getOrCreate();
-
     // $example on$
-    // Load training data.
-    Dataset<Row> training = spark.read().format("libsvm")
-      .load("src/main/java/com/kdy/spark/ml/data/mllib/sample_linear_regression_data.txt");
+    String path = "src/main/java/com/kdy/spark/ml/data/mllib/sample_libsvm_data.txt";
+    JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(javaSparkContext.sc(), path).toJavaRDD();
 
-    LinearRegression lr = new LinearRegression()
-      .setMaxIter(10)
-      .setRegParam(0.3)
-      .setElasticNetParam(0.8);
+    // Split initial RDD into two... [60% training data, 40% testing data].
+    JavaRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
+    JavaRDD<LabeledPoint> training = splits[0].cache();
+    JavaRDD<LabeledPoint> test = splits[1];
 
-    // Fit the model.
-    LinearRegressionModel lrModel = lr.fit(training);
+    // Run training algorithm to build the model.
+    LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
+            .setNumClasses(10)
+            .run(training.rdd());
 
-    // Print the coefficients and intercept for linear regression.
-    System.out.println("Coefficients: "
-      + lrModel.coefficients() + " Intercept: " + lrModel.intercept());
+    // Compute raw scores on the test set.
+    JavaPairRDD<Object, Object> predictionAndLabels = test.mapToPair(p ->
+            new Tuple2<>(model.predict(p.features()), p.label()));
 
-    // Summarize the model over the training set and print out some metrics.
-    LinearRegressionTrainingSummary trainingSummary = lrModel.summary();
-    System.out.println("numIterations: " + trainingSummary.totalIterations());
-    System.out.println("objectiveHistory: " + Vectors.dense(trainingSummary.objectiveHistory()));
-    trainingSummary.residuals().show();
-    System.out.println("RMSE: " + trainingSummary.rootMeanSquaredError());
-    System.out.println("r2: " + trainingSummary.r2());
+    // Get evaluation metrics.
+    MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels.rdd());
+    double accuracy = metrics.accuracy();
+    System.out.println("Accuracy = " + accuracy);
     // $example off$
 
-    spark.stop();
+    javaSparkContext.stop();
   }
 }

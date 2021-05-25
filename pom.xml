@@ -48,7 +48,7 @@
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_2.12</artifactId>
-			<version>3.1.1</version>
+			<version>3.0.0</version>
 		</dependency>
 
 
@@ -56,14 +56,14 @@
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-sql_2.12</artifactId>
-			<version>3.1.1</version>
+			<version>3.0.0</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.apache.spark/spark-hive -->
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-hive_2.12</artifactId>
-			<version>3.1.1</version>
+			<version>3.0.0</version>
 
 		</dependency>
 
@@ -80,7 +80,9 @@
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-mllib_2.12</artifactId>
-			<version>3.1.1</version>
+			<version>3.0.0</version>
+<!--			<scope>provided</scope>-->
+
 
 		</dependency>
 
@@ -89,7 +91,7 @@
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-streaming_2.12</artifactId>
-			<version>3.1.1</version>
+			<version>3.0.0</version>
 
 		</dependency>
 
@@ -135,21 +137,9 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
-					<layout>ZIP</layout>
-<!--					<includes>-->
-<!--						<include>-->
-<!--							<groupId>nothing</groupId>-->
-<!--							<artifactId>nothing</artifactId>-->
-<!--						</include>-->
-<!--					</includes>-->
+
 				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>repackage</goal>
-						</goals>
-					</execution>
-				</executions>
+
 			</plugin>
 
 
