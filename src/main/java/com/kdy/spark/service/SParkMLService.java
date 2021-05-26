@@ -5,20 +5,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.Pipeline;
-import org.apache.spark.ml.PipelineModel;
-import org.apache.spark.ml.PipelineStage;
-import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
-import org.apache.spark.ml.classification.DecisionTreeClassifier;
-import org.apache.spark.ml.clustering.BisectingKMeans;
-import org.apache.spark.ml.clustering.BisectingKMeansModel;
-import org.apache.spark.ml.evaluation.ClusteringEvaluator;
-import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
-import org.apache.spark.ml.feature.*;
-import org.apache.spark.ml.linalg.Vectors;
-import org.apache.spark.ml.regression.LinearRegression;
-import org.apache.spark.ml.regression.LinearRegressionModel;
-import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
+
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
 import org.apache.spark.mllib.clustering.KMeans;
@@ -29,8 +16,6 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.util.MLUtils;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -120,10 +105,10 @@ public class SParkMLService  implements Serializable {
 
         // Load and parse the data file.
         String datapath = "src/main/java/com/kdy/spark/ml/data/mllib/sample_libsvm_data.txt";
-        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint> data = MLUtils.loadLibSVMFile(javaSparkContext.sc(), datapath).toJavaRDD();
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(javaSparkContext.sc(), datapath).toJavaRDD();
         // Split the data into training and test sets (30% held out for testing)
-        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint>[] splits = data.randomSplit(new double[]{0.7, 0.3});
-        JavaRDD<org.apache.spark.mllib.regression.LabeledPoint> trainingData = splits[0];
+        JavaRDD<LabeledPoint>[] splits = data.randomSplit(new double[]{0.7, 0.3});
+        JavaRDD<LabeledPoint> trainingData = splits[0];
         JavaRDD<LabeledPoint> testData = splits[1];
 
         // Set parameters.
