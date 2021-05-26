@@ -71,12 +71,13 @@ public class JavaKMeansExample {
 
     System.out.println("Cluster centers:");
     for (Vector center: clusters.clusterCenters()) {
-      System.out.println(" " + center);
+      System.out.println("聚类中心" + center);
     }
     double cost = clusters.computeCost(parsedData.rdd());
-    System.out.println("Cost: " + cost);
+    System.out.println("损失值: " + cost);
 
     // Evaluate clustering by computing Within Set Sum of Squared Errors
+    //通过在平方误差的集合和内计算来评估聚类
     double WSSSE = clusters.computeCost(parsedData.rdd());
     System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
 

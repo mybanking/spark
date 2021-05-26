@@ -34,7 +34,7 @@ import org.apache.spark.mllib.util.MLUtils;
 public class JavaLinearRegressionWithElasticNetExample {
   public static void main(String[] args) {
     SparkConf sparkConf = new SparkConf()
-            .setAppName("Kmeans")
+            .setAppName("JavaLinearRegressionWithElasticNetExample")
             .setMaster("local")
             .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
     // Create a SparkSession.
