@@ -189,6 +189,7 @@ public class SParkMLService  implements Serializable {
         MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels.rdd());
         double accuracy = metrics.accuracy();
         System.out.println("Accuracy = " + accuracy);
+        result.put("Accuracy",accuracy);
         // $example off$
 
         javaSparkContext.stop();
