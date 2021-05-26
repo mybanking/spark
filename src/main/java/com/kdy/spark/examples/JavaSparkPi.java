@@ -20,8 +20,6 @@ package com.kdy.spark.examples;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.SparkSession;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,15 +33,17 @@ public final class JavaSparkPi {
 
     SparkConf sparkConf = new SparkConf().setAppName("javaSparkPi");
 
-//    if(args.length==0){
-//      sparkConf.setMaster("local")
-//              .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
-//    }
+    if(args.length==0){
+      sparkConf.setMaster("local")
+              .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
+    }
 
     JavaSparkContext jsc=new JavaSparkContext(sparkConf);
 
     int slices = (args.length == 1) ? Integer.parseInt(args[0]) : 2;
     int n = 100000 * slices;
+
+
     List<Integer> l = new ArrayList<>(n);
     for (int i = 0; i < n; i++) {
       l.add(i);

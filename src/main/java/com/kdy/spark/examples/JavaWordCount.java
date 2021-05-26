@@ -19,15 +19,10 @@ package com.kdy.spark.examples;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import scala.Tuple2;
-
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.sql.SparkSession;
-
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -38,10 +33,10 @@ public final class JavaWordCount {
 
     SparkConf sparkConf = new SparkConf().setAppName("wordCount");
 
-//    if(args.length==0){
-//      sparkConf.setMaster("local")
-//              .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
-//    }
+    if(args.length==0){
+      sparkConf.setMaster("local")
+              .set("spark.driver.host", "localhost").set("spark.testing.memory", "21474800000");
+    }
 
 
 
@@ -62,3 +57,7 @@ public final class JavaWordCount {
     jsc.stop();
   }
 }
+
+
+
+
